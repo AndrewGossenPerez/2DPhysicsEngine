@@ -1,3 +1,7 @@
+
+// Collision.cpp, created by Andrew Gossen.
+// Holds all core functions used to discern whether two objects are colliding, and their contact points. 
+
 #include "collision/Collision.hpp"
 #include "core/Vector2.hpp"
 #include "math/Math.hpp"
@@ -6,26 +10,7 @@
 #include "visuals/Visuals.hpp"
 #include <iostream>
 
-// Helper functions for SAT 
-void projectAxis(const std::vector<Vec2>& vertices,const Vec2& normalAxis,float& max,float& min){ // Projects each vertice onto the normal axis and establishes max and min
-    float projection = vecMath::dot(vertices[0], normalAxis);
-    min = max = projection; // Establish a baseline 
-    for (size_t i=1;i<vertices.size();++i){ // Starting from one as we already established vertices[0] 
-        Vec2 vertice=vertices[i];
-        float projection=vecMath::dot(vertice,normalAxis);
-        if (projection<min){ min=projection; }
-        if (projection>max) { max=projection; }
-    }
-}
-
-Vec2 getMean(const std::vector<Vec2>& vertices){ // Arithmetic sum of vertices, i.e. centre point 
-    Vec2 mean{0.0f,0.0f};
-    for (auto& vector : vertices){
-        mean+=vector;
-    }
-    return mean/static_cast<float>(vertices.size());
-}
-
+// -- Contact Point Detection
 
 struct contactResult{
     Vec2 contact1;
@@ -39,6 +24,11 @@ struct ContactCandidate {
 };
 
 contactResult getContactPoints(const RigidBody& A, const RigidBody& B) {
+
+    // --- 
+    // Gathers and returns the contact points between two Rigidbodys A and B ( determined to be in collision with one another )
+    // param A - First Rigid Body
+    // --- 
 
     std::vector<ContactCandidate> candidates;
     candidates.reserve(
@@ -69,24 +59,22 @@ contactResult getContactPoints(const RigidBody& A, const RigidBody& B) {
         return { Vec2(0,0), Vec2(0,0), 0 };
     }
 
-    // 1) Find global minimum distance
+    // Find the global minimum distance 
     float minDistSq = candidates[0].distSq;
     for (const auto& c : candidates) {
         if (c.distSq < minDistSq) {
             minDistSq = c.distSq;
         }
     }
-
-    // 2) Tolerance for "near-minimum" contacts
-    //    (tune this based on your world scale)
-    const float eps = 0.0001f; 
-    float threshold = minDistSq + eps;
+    
+    const float eps = 0.0001f; // The tolerance value, determines the 'close enough' threshold
+    // Two vertices may be close but not exactly touching, if they're close enough we should still register it as a contact point
+    float threshold = minDistSq + eps; // This defines how close 'close enough' is 
 
     Vec2 contact1{};
     Vec2 contact2{};
     int  contactCount = 0;
 
-    // 3) Pick first contact
     for (const auto& c : candidates) {
         if (c.distSq <= threshold) {
             contact1 = c.point;
@@ -95,7 +83,6 @@ contactResult getContactPoints(const RigidBody& A, const RigidBody& B) {
         }
     }
 
-    // 4) Pick second contact, distinct from first
     for (const auto& c : candidates) {
         if (c.distSq <= threshold &&
             !vecMath::vecCloselyEqual(contact1, const_cast<Vec2&>(c.point))) {
@@ -109,7 +96,48 @@ contactResult getContactPoints(const RigidBody& A, const RigidBody& B) {
 
 }
 
+// -- Sat Detection
+
+// Helper functions for SATCollision
+
+void projectAxis(const std::vector<Vec2>& vertices,const Vec2& normalAxis,float& max,float& min){ // Projects each vertice onto the normal axis and establishes max and min
+    
+    // --- 
+    
+    // Runs the SAT loop, checking the normal of each polygon face and then projecting to attempt to find a 'seperating axis'.
+
+    // param A - First Rigid Body
+    // param B - Second Rigid Body 
+    // param penetration - The penetration, representing the extend at which the two objects collide 
+    // param normal - The normal vector to the collision, used to apply an impulse. Points from A to B.
+
+    // --- 
+
+    float projection = vecMath::dot(vertices[0], normalAxis);
+    min = max = projection; // Establish a baseline 
+    for (size_t i=1;i<vertices.size();++i){ // Starting from one as we already established vertices[0] 
+        Vec2 vertice=vertices[i];
+        float projection=vecMath::dot(vertice,normalAxis);
+        if (projection<min){ min=projection; }
+        if (projection>max) { max=projection; }
+    }
+
+}
+
+
 bool SATLoop(const RigidBody& A,const RigidBody& B,float& penetration,Vec2& normal){
+
+    // --- 
+
+    // Runs the SAT loop, checking the normal of each polygon face and then projecting to attempt to find a 'seperating axis'.
+
+    // param A - First Rigid Body
+    // param B - Second Rigid Body 
+    // param penetration - The penetration, representing the extend at which the two objects collide 
+    // param normal - The normal vector to the collision, used to apply an impulse. 
+
+    // --- 
+  
 
     std::vector<Vec2> verticesA=A.transformedVertices;
     std::vector<Vec2> verticesB=B.transformedVertices;
@@ -146,10 +174,18 @@ bool SATLoop(const RigidBody& A,const RigidBody& B,float& penetration,Vec2& norm
 
 }
 
-// SAT 
+// Main SAT function, utilising helpers. Attempts to find a seperating axis to discern if two objects are touching or not.
+
 Manifold SATCollision(RigidBody& RigidBodyA,RigidBody& RigidBodyB) { 
     
-    // Returns true if two vertices ( Representing a polygon ) intersect using the seperating axis thereom. 
+    // --- 
+    // Returns a manifold if two vertices ( Representing a polygon ) intersect using the seperating axis thereom. 
+    // The rigid bodies A and B are compared against each other.
+
+    // param A - First Rigid Body
+    // param B - Second Rigid Body 
+
+    // --- 
   
     float penetration{1000.0f}; // Will yield as the smallest penetration
     Vec2 normal{0.0f,0.0f}; // Will yield as the normal for the smallest penetration
@@ -162,22 +198,14 @@ Manifold SATCollision(RigidBody& RigidBodyA,RigidBody& RigidBodyB) {
     contactResult contactData;
 
     if (inCollision){
-       contactData=getContactPoints(RigidBodyA,RigidBodyB);
-    }
-
-    if (contactData.contactCount >= 1) {
-        DebugDraw::drawContactPoint(contactData.contact1, 0.05f);
-    }
-    if (contactData.contactCount >= 2) {
-        DebugDraw::drawContactPoint(contactData.contact2, 0.05f);
-        DebugDraw::drawContactSegment(contactData.contact1, contactData.contact2);
+       contactData=getContactPoints(RigidBodyA,RigidBodyB); // If the object is in collision start to register the contact points 
     }
 
     if (vecMath::dot(normal, RigidBodyB.position - RigidBodyA.position) < 0.0f) {
         normal = normal*-1;  // Ensure the normal always points from a to b to avoid merging objects 
     }
 
-    Manifold manifold{ // Build a manifold to describe the outcome 
+    Manifold manifold{ // Build a manifold to describe the outcome of the collision
         RigidBodyA,
         RigidBodyB,
         normal,
