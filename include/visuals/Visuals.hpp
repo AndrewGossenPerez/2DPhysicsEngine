@@ -9,7 +9,7 @@
 
 class Visuals {
 
-public:
+    public:
 
     Visuals();  
     ~Visuals();  
@@ -18,18 +18,15 @@ public:
 
     // Draw a single rigid body using internal VAO/VBO + shader
     void drawRigidBody(RigidBody& body);
-
     // The actual render loop running each frame. 
     void renderLoop(World& world);
-
     // Getters
     GLFWwindow* getWindow() const { return window; }
-
     // Setters
     void setZoom(float z) { zoom = z; }
     float& getZoom() { return zoom; }
 
-private:
+    private:
 
     // Window / GL context
     GLFWwindow* window = nullptr;
@@ -52,40 +49,3 @@ private:
     bool ok = false;    
 
 };
-
-
-#pragma once
-#include "core/Vector2.hpp"
-
-namespace DebugDraw {
-
-    // Draws a small cross at a world-space point
-    inline void drawContactPoint(const Vec2& p, float size = 0.05f) {
-        // Assuming you already have an orthographic projection + view set up.
-        // Using old-school immediate mode for simplicity.
-
-        glBegin(GL_LINES);
-
-        // Horizontal line (red)
-        glColor3f(1.0f, 0.0f, 0.0f);
-        glVertex2f(p.x - size, p.y);
-        glVertex2f(p.x + size, p.y);
-
-        // Vertical line (red)
-        glVertex2f(p.x, p.y - size);
-        glVertex2f(p.x, p.y + size);
-
-        glEnd();
-    }
-
-    // Optional: draw a line between two contact points to visualise the contact "edge"
-    inline void drawContactSegment(const Vec2& a, const Vec2& b) {
-        glBegin(GL_LINES);
-        glColor3f(0.0f, 1.0f, 0.0f); // green
-        glVertex2f(a.x, a.y);
-        glVertex2f(b.x, b.y);
-        glEnd();
-    }
-
-}
-

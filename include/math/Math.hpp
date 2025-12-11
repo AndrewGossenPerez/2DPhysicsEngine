@@ -1,10 +1,9 @@
 // Math.hpp, created by Andrew Gossen.
-// Holds math utility functions / helper functions.
+// Holds math utility functions / helper functions for the linear algebra required in this engine.
 
 #pragma once
 #include "core/Vector2.hpp"
 #include <cmath>
-
 
 namespace vecMath{
 

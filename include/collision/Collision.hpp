@@ -1,4 +1,7 @@
 
+// Collision.hpp, created by Andrew Gossen.
+// Stores the Manifold struct, used to store data between two rigid bodies in collision
+
 #pragma once 
 #include "core/RigidBody.hpp"
 #include "core/Vector2.hpp"
@@ -16,5 +19,6 @@ struct Manifold{
     bool inCollision;
 };
 
-Manifold SATCollision(RigidBody& RigidBodyA,RigidBody& RigidBodyB);  // Returns whether there is a collision, works on transformed vertices ( world space ) 
+// Defined in collision.cpp 
+Manifold SATCollision(RigidBody& RigidBodyA,RigidBody& RigidBodyB);  
 

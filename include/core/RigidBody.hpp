@@ -1,13 +1,14 @@
 
+// RigidBody.h, created by Andrew Gossen.
+// Holds the struct to define a RigidBody, and holds some functions defined in RigidBody.cpp 
+
 #pragma once
 #include "core/Vector2.hpp"
 #include <vector>
 
-
-enum ShapeType{
+enum ShapeType{ // Implement later for optimisation
     Circle,Rectangle,Polygon
 };
-
 struct Colour{
     float r,g,b;
 };
@@ -61,5 +62,6 @@ struct RigidBody{
 
 };
 
+// Defined in RigidBody.cpp
 float calculateInertia(RigidBody& body);
 void setBoxVertices(RigidBody& body, float height, float width);

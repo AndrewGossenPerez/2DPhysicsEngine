@@ -1,5 +1,6 @@
+
 // Transform.hpp, created by Andrew Gossen.
-// Used for transformation calculations, used to convert the local vertices to world-space.
+// Used for transformation calculations, ultimately to convert the local vertices to world-space.
 
 #pragma once 
 #include "Vector2.hpp"
@@ -7,8 +8,8 @@
 
 struct Transform{ 
 
-    Vec2 position{0.0f,0.0f};
-    float rotation{0.0f}; // measured in radians  
+    Vec2 position{0.0f,0.0f}; // Transform position 
+    float rotation{0.0f}; // Transform measured in radians  
 
     Transform()=default;
     explicit Transform(const Vec2& position,float rotation) : position(position), rotation(rotation) {}
@@ -23,6 +24,10 @@ struct Transform{
     }
 
     Vec2 applyTransform(const Vec2& p) const { 
+        // -- 
+        // Applies a transformation to position p
+        // param p - Vector 2 position
+        // -- 
         float c=std::cos(rotation);
         float s=std::sin(rotation);
         Vec2 rotated(
@@ -36,10 +41,14 @@ struct Transform{
 
 namespace physEng{
 
-    inline void worldSpace(RigidBody& body) { // Updates vertices from local space to world spaces 
+    inline void worldSpace(RigidBody& body) { 
 
-        if (!body.update && !body.transformedVertices.empty())
-            return;
+        // -- 
+        // This is used to update a RigidBody's vertices from local space ( relative to it's com ) to world space ( Using the x-y world co-ordinate system)
+        // param body - RigidBody to update vertices from local space to world space for 
+        // -- 
+
+        if (!body.update && !body.transformedVertices.empty()) return;
 
         Transform t(body.position, body.rotation);
 
@@ -51,7 +60,6 @@ namespace physEng{
         }
         
     }
-
 
 };
 
