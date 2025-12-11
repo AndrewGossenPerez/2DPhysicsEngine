@@ -1,3 +1,5 @@
+// world.cpp, created by Andrew Gossen.
+// Utilises collision functions to actually apply impulses to Rigid Bodies after it has been discovered they're in collision.
 
 #include "core/World.hpp"
 #include "collision/Collision.hpp"
@@ -9,7 +11,16 @@
 #include <iostream>
 
 
-void broadPhase(std::vector<RigidBody>& m_bodies){ // Establish which objects are likely to be colliding 
+void broadPhase(std::vector<RigidBody>& m_bodies){ 
+    
+    // -- 
+    // This is the broad phase, where we want to know what objects are likely to be colliding
+    // The concept is to first use AABB and partioning to discern objects likely to be in collision
+    // We then only apply the SAT to objects likely to be colliding
+    // This is to avoid running unnecessary code on two bodies in which it is apparent they're not in collision
+
+    // param m_bodies - private member of the world, storing all RigidBodies in the world.
+    // -- 
 
     // First do an AABB test
     for (size_t i = 0; i < m_bodies.size(); ++i) {
@@ -18,51 +29,63 @@ void broadPhase(std::vector<RigidBody>& m_bodies){ // Establish which objects ar
             RigidBody& A=m_bodies[i];
             RigidBody& B=m_bodies[j];
 
-            if (A.isStatic && B.isStatic) continue;
-            
+            if (A.isStatic && B.isStatic) continue; // No point in evaluating two static bodies 
+
+            // Transform each polygon's local space vertex's into world space 
             physEng::worldSpace(A);
             physEng::worldSpace(B);
-
+            // Define each bodies' AABB bounding box 
             AABB A_AABB=getAABB(A);
             AABB B_AABB=getAABB(B);
 
-            if (AABBintersection(A_AABB,B_AABB)){
-                // Move onto narrow phase 
-                resolvePair(A,B);
+            if (AABBintersection(A_AABB,B_AABB)){ // If the AABB boxes intersect move onto the next stage 
+                // Move onto narrow phase, implement partioning latero n 
+                narrowPhase(A,B); // This is the narrow phase 
             }
         }
     }
     
 }
 
-void World::step(float dt){ // Called each frame
+void World::step(float dt){ 
+
+    // -- 
+    // Step function for the world, called after each frame is rendered
+    // param dt - The elapsed time between consecutive frames 
+    // -- 
 
     for (auto& body : m_bodies){
         if (!body.isStatic){
 
-            // Integrator using dt ( Time between consecutive frames ) 
+            // Integrator using dt
             body.linearAcceleration = gravity;
             body.linearVelocity += body.linearAcceleration * dt;
             body.position += body.linearVelocity * dt;
             body.rotation+=body.angularVelocity*dt;
-
-            body.force = Vec2(0, 0);
-
+            body.force = Vec2(0, 0); // Going to implement forces later on 
+ 
         }
 
     }
 
-    broadPhase(m_bodies);
+    broadPhase(m_bodies); // Check the broad phase First 
+    // Note, the narrowPahse is automatically called within the broadPhase function.
 
 }
 
-struct impulseManifold{
+struct impulseManifold{ // Used to store impulses to apply all impulses only once all contact points are accounted for 
     Vec2 impulse;
     Vec2 rA;
     Vec2 rB;
 };
 
 void resolveCollision(Manifold& manifold){
+
+    // -- 
+    // Resolves a collision between two objects 
+    // By 'resolving', this means applying appropriate forces such that each object seperates from one another 
+    // param manifold - The collision data gathered from the SAT test, stores contact data and the normal ( pointing from A to B )
+    // -- 
 
     RigidBody& A=manifold.A;
     RigidBody& B=manifold.B;
@@ -117,27 +140,31 @@ void resolveCollision(Manifold& manifold){
 
     // Apply impulses after impulse for all contact points created 
     for (auto& impulseData : impulses){
-
         A.linearVelocity-=impulseData.impulse*A.inverseMass;
         B.linearVelocity+=impulseData.impulse*B.inverseMass;
         A.angularVelocity += -vecMath::cross(impulseData.rA, impulseData.impulse) * A.inverseInertia;
         B.angularVelocity += vecMath::cross(impulseData.rB, impulseData.impulse) * B.inverseInertia;
-
     }
 
 };
 
-void resolvePair(RigidBody& A, RigidBody& B){ 
-    // Check if Body A and B are colliding, if so resolve their
+void narrowPhase(RigidBody& A, RigidBody& B){ 
+    
+    // --
+    // This is the narrow phase called when it is likely A and B are colliding
+    // param A - A rigid body, that is likely to be colliding with RigidBody B
+    // param B - A rigid body, that is likely to be colliding with RigidBody A 
+    // -- 
 
-    Manifold m = SATCollision(A, B);
-    if (!m.inCollision) return; // Two objects are not colliding
+    Manifold m = SATCollision(A, B); // Apply the SAT test to objectively discern if they are in collision
+    if (!m.inCollision) return; // Two objects are not colliding. we can stop here
 
-    resolveCollision(m); // Collision solver 
+    resolveCollision(m); // At this point, the two objects are colliding, so we must resolve the collision
 
-    // Positional correction
-    const float percent = 0.4f; 
-    const float slop = 0.01f;
+    // Apply position correction afterwards to seperate the two objects.
+
+    const float percent = 0.4f;  // Error percentage 
+    const float slop = 0.01f; // Precision, based on world distance unit 
 
     float invMassSum = A.inverseMass+B.inverseMass; // Zero implies two static bodies
     if (invMassSum > 0.f){ 

@@ -1,4 +1,5 @@
-// Visuals.cpp
+// visuals.cpp, created Andrew Gossen.
+// Handles the OpenGL rendering of all rigid bodies.
 
 #include "visuals/Visuals.hpp"
 #include "core/Transform.hpp"
@@ -6,7 +7,7 @@
 #include <thread>
 #include <chrono>
 
-// Shader sources live in the .cpp to avoid multiple definition problems
+// Shader sources live in the .cpp to avoid violating ODR 
 static const char* vertexShaderSource = R"(
 #version 330 core
 layout (location = 0) in vec2 aPos;
@@ -36,6 +37,11 @@ void main() {
 )";
 
 Visuals::Visuals(){
+
+    // -- 
+    // Initialises required OpenGL objects before the main render loop is called 
+    // -- 
+
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW\n";
         ok = false;
@@ -98,9 +104,15 @@ Visuals::Visuals(){
     glGenBuffers(1, &vbo);
 
     ok = true;
+
 }
 
 Visuals::~Visuals(){
+
+    // ---
+    // Deconstructor used for when the window is being closed 
+    // -- 
+
     if (vao != 0) glDeleteVertexArrays(1, &vao);
     if (vbo != 0) glDeleteBuffers(1, &vbo);
     if (shaderProgram != 0) glDeleteProgram(shaderProgram);
@@ -109,10 +121,18 @@ Visuals::~Visuals(){
         glfwDestroyWindow(window);
         glfwTerminate();
     }
+
 }
 
-// Draw a single rigid body (assumes body.transformedVertices already updated)
 void Visuals::drawRigidBody(RigidBody& body){
+
+    // -- 
+    // Renders a RigidBody to the screen
+    // param body - The rigid body to render 
+
+    // This is assuming that transformedVertices has already been calculated ( Of which it has been in the world step loop )
+
+    // - 
    
     if (!ok) return;
 
@@ -169,8 +189,12 @@ void Visuals::drawRigidBody(RigidBody& body){
 
 }
 
-// Render Loop 
 void Visuals::renderLoop(World& world){
+
+    // -- 
+    // The main render loop, rendering all Rigid Bodies each frame and calling the world step function
+    // param world - The world object describing the physics world 
+    // -- 
 
     int frameRate=120; // 120 fps desired 
     float lastTime = glfwGetTime();
@@ -178,15 +202,16 @@ void Visuals::renderLoop(World& world){
     while (!glfwWindowShouldClose(window)) {
 
         double frameStart = glfwGetTime();
+
         // Basic input
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, true);
 
         // Zoom controls: Q to zoom in, E to zoom out
         if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-            zoom *= 1.01f; // zoom in
+            zoom *= 1.01f; // Zooms in
         }
         if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-            zoom /= 1.01f; // zoom out
+            zoom /= 1.01f; // Zooms out
         }
 
         // Handle framebuffer size changes (retina / window resize)
@@ -201,7 +226,7 @@ void Visuals::renderLoop(World& world){
         glUniform1f(aspectLoc, aspect);
         glUniform1f(zoomLoc, zoom);
 
-        // Draw bodies 
+        // Draw each rigid body in the world  
         for (auto& body:world.getBodies()){
             drawRigidBody(body);
         }
@@ -209,19 +234,12 @@ void Visuals::renderLoop(World& world){
         glfwSwapBuffers(window);
         glfwPollEvents();
 
-       
-           // --- PHYSICS STEP ---
-
-        // Option A: use *actual* dt (variable timestep)
         double now = glfwGetTime();
-        double dt = now - lastTime;
+        double dt = now - lastTime; // Calculate elapsed time from last frame for the dt value in world step 
         lastTime = now;
         world.step(static_cast<float>(dt));
 
-        // Option B (if you want fixed timestep): 
-        // world.step(static_cast<float>(targetFrameTime));
-
-        // --- FRAME LIMITING TO 120 FPS ---
+        // Run at the desired frame rate 
         double frameEnd = glfwGetTime();
         double frameDuration = frameEnd - frameStart;
         double sleepTime = (1/frameRate) - frameDuration;
@@ -229,6 +247,7 @@ void Visuals::renderLoop(World& world){
         if (sleepTime > 0.0) {
             std::this_thread::sleep_for(std::chrono::duration<double>(sleepTime));
         }
+
         
     }
 
