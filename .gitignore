@@ -12,6 +12,10 @@ out/
 *.so
 *.dylib
 
+#Some cheeky things
+.gitignore
+.app
+
 # VSCode
 .vscode/
 
