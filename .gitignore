@@ -1,0 +1,23 @@
+# Build folders
+build/
+bin/
+out/
+*.o
+
+# macOS junk
+.DS_Store
+
+# GLFW / GLAD build leftovers
+*.dll
+*.so
+*.dylib
+
+# VSCode
+.vscode/
+
+# Logs
+*.log
+
+# Executables
+a.out
+*.exe
