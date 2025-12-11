@@ -28,40 +28,74 @@ int main(){
     setBoxVertices(floor, 30.0f, 30.0f);    
     floor.snapTo(Vec2(0.0f, -27.0f));         
     floor.rotate(1.5708f);                  
-    floor.colour = Colour{0.0f, 255.0f, 255.0f};
+    floor.colour = Colour{150.0f, 255.0f, 255.0f};
     floor.isStatic=true;
     floor.restitution=1.0f;
     world.getBodies().push_back(floor);
 
+
+    RigidBody floor2;
+    setBoxVertices(floor2, 10.0f, 0.6f);    
+    floor2.snapTo(Vec2(5.0f, 0.9f));         
+    floor2.rotate(1.5708*1.1f);                  
+    floor2.colour = Colour{150.0f, 255.0f, 255.0f};
+    floor2.isStatic=true;
+    floor2.restitution=1.0f;
+    world.getBodies().push_back(floor2);
+
+    // Restitiution example 
+    RigidBody t3(3,1.0,2.0);
+    t3.snapTo(Vec2(0.0f, -2.0f));   
+    t3.rotate(1.5708);      
+    t3.restitution=0.2f;
+    t3.linearVelocity=Vec2(1.0f,0.0f);
+    world.getBodies().push_back(t3);
+
+    RigidBody t2(3,1.0,2.0);
+    t3.snapTo(Vec2(0.0f, -2.0f));   
+    t3.rotate(1.5708);      
+    t3.restitution=0.2f;
+    t3.linearVelocity=Vec2(1.0f,0.0f);
+    world.getBodies().push_back(t3);
+
+
     RigidBody triangle(4,1.0,2.0);
     triangle.snapTo(Vec2(5.0f, 3.0f));   
-    triangle.rotate(1.5708/1.20f);      
+    triangle.rotate(1.5708*1.5f);      
     triangle.restitution=0.3f;
     world.getBodies().push_back(triangle);
 
     RigidBody box2(10,1.0,2.0);
-    box2.snapTo(Vec2(1.0f, 6.0f));   
-    box2.rotate(1.5708/1.20f);      
+    box2.snapTo(Vec2(-20.0f, 6.0f));   
+    box2.rotate(1.5708f);      
     box2.restitution=0.3f;
-    box2.linearVelocity=Vec2(1.0f,0.0f);
+    box2.linearVelocity=Vec2(0.0f,0.0f);
     world.getBodies().push_back(box2);
 
     RigidBody triangle2(3,1.0,2.0);
-    triangle2.snapTo(Vec2(1.0f, 6.0f));   
-    triangle2.rotate(1.5708/1.20f);      
-    triangle2.restitution=0.7f;
+    triangle2.snapTo(Vec2(6.0f, -2.0f));   
+    triangle2.rotate(1.5708);      
+    triangle2.restitution=0.2f;
     triangle2.linearVelocity=Vec2(1.0f,0.0f);
     world.getBodies().push_back(triangle2);
 
-    for (int i=1;i<3;i++){
+    for (int i=1;i<6;i++){
         RigidBody triangle2(6 ,1.0,2.0);
-        triangle2.snapTo(Vec2(5.0f+i, 8.0f+(i+5)));   
+        triangle2.snapTo(Vec2(5.0f+(i*2), 30.0f+(i+50)));   
         triangle2.rotate(1.5708/1.20f);    
         triangle2.colour=Colour{250.0f,250.0f,220.0f};
         triangle2.restitution=0.6f;
         world.getBodies().push_back(triangle2);
     };
    
+    for (int i=1;i<3;i++){
+        RigidBody triangle2(4 ,1.0,2.0);
+        triangle2.snapTo(Vec2(5.0f+(i*2), 40.0f+(i+50)));   
+        triangle2.rotate(1.5708/1.20f);    
+        triangle2.colour=Colour{250.0f,250.0f,220.0f};
+        triangle2.restitution=0.6f;
+        world.getBodies().push_back(triangle2);
+    };
     // Main loop
     gfx.renderLoop(world);
 

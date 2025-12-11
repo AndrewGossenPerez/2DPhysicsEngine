@@ -14,10 +14,12 @@ void broadPhase(std::vector<RigidBody>& m_bodies){ // Establish which objects ar
     // First do an AABB test
     for (size_t i = 0; i < m_bodies.size(); ++i) {
         for (size_t j = i + 1; j < m_bodies.size(); ++j) {
-    
+
             RigidBody& A=m_bodies[i];
             RigidBody& B=m_bodies[j];
 
+            if (A.isStatic && B.isStatic) continue;
+            
             physEng::worldSpace(A);
             physEng::worldSpace(B);
 
@@ -71,8 +73,6 @@ void resolveCollision(Manifold& manifold){
     if (manifold.contactCount >= 1) contacts.push_back(manifold.contact1);
     if (manifold.contactCount >= 2) contacts.push_back(manifold.contact2);
 
-    float restitution = std::min(A.restitution, B.restitution);
-
     std::vector<impulseManifold> impulses;
 
     impulses.reserve(contacts.size());
@@ -101,8 +101,9 @@ void resolveCollision(Manifold& manifold){
         float rBDot=vecMath::dot(rB,normal);
 
         // Same scalar impulse magnitude 
-        float minRestitiution = std::min(A.restitution, B.restitution);
-        float j = -(1.0f + minRestitiution) * vecMath::dot(relativeVel,normal);
+        float minRestitiution = std::min(A.restitution, B.restitution); // Variable e 
+
+        float j = -(1.0f + minRestitiution) * velAlongNormal;
         float denominator= (A.inverseMass + B.inverseMass + (rADot*rADot)*A.inverseInertia + (rBDot*rBDot)*B.inverseInertia  );
         j /= denominator;
         j /= static_cast<float>(manifold.contactCount);
@@ -132,6 +133,8 @@ void resolvePair(RigidBody& A, RigidBody& B){
     Manifold m = SATCollision(A, B);
     if (!m.inCollision) return; // Two objects are not colliding
 
+    resolveCollision(m); // Collision solver 
+
     // Positional correction
     const float percent = 0.4f; 
     const float slop = 0.01f;
@@ -144,8 +147,6 @@ void resolvePair(RigidBody& A, RigidBody& B){
         if (!A.isStatic) A.position -= correction * A.inverseMass;
         if (!B.isStatic) B.position += correction * B.inverseMass;
     }
-
-    resolveCollision(m); // Collision solver 
 
 }
 
