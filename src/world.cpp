@@ -72,8 +72,11 @@ void World::step(float dt){
 
     }
 
-    broadPhase(m_bodies); // Check the broad phase First 
-    // Note, the narrowPahse is automatically called within the broadPhase function.
+    for (int i = 0; i < solverIterations; ++i) { 
+        broadPhase(m_bodies); // Check the broad phase First 
+        // Note, the narrowPahse is automatically called within the broadPhase function.
+    }
+
 
 }
 
@@ -173,7 +176,7 @@ void narrowPhase(RigidBody& A, RigidBody& B){
 
     // Apply position correction afterwards to seperate the two objects.
 
-    const float percent = 0.4f;  // Error percentage 
+    const float percent = 0.8f;  // Error percentage 
     const float slop = 0.01f; // Precision, based on world distance unit 
 
     float invMassSum = A.inverseMass+B.inverseMass; // Zero implies two static bodies
