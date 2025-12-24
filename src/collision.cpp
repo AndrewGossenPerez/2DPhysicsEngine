@@ -16,7 +16,7 @@ struct contactResult{
     int  contactCount{0};
 };
 
-struct ContactCandidate {
+struct contactCandidate{
     Vec2  point;
     float distSq;
 };
@@ -33,10 +33,10 @@ contactResult getContactPoints(const RigidBody& A, const RigidBody& B) {
         return { Vec2(0,0), Vec2(0,0), 0 };
     }
 
-    std::vector<ContactCandidate> candidates;
+    std::vector<contactCandidate> candidates;
     candidates.reserve(
         A.transformedVertices.size() * B.transformedVertices.size() * 2
-    );
+    ); 
 
     // Helper function that pushes candidates for 'points of P to edges of Q'
     auto gatherCandidates = [&](const RigidBody& P, const RigidBody& Q) {

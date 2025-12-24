@@ -24,10 +24,13 @@ void broadPhase(std::vector<RigidBody>& bodies){
     std::vector<AABB> aabbs;
     aabbs.reserve(bodies.size()); 
 
-    for (auto& body : bodies){
+    for (auto& body : bodies){ 
+        // update world space vertices for bodies still in bounds 
+
         physEng::worldSpace(body); // Update each body from it's local space vertices to world space 
         AABB box=getAABB(body); // Construct it's AABB
         aabbs.push_back(box);
+
     }
 
     partioning::GridConfig gridConfig;
@@ -72,6 +75,14 @@ void World::step(float dt){
         }
 
     }
+
+    m_bodies.erase( // Remove bodies that are out of bounds 
+        std::remove_if(m_bodies.begin(), m_bodies.end(),
+            [&](const RigidBody& body) {
+                return body.position.y < -m_yBounds;
+            }),
+        m_bodies.end()
+    );
 
     for (int i = 0; i < solverIterations; ++i) { 
         broadPhase(m_bodies); // Check the broad phase First 

@@ -41,6 +41,7 @@ struct RigidBody{
     // Constructor 
     RigidBody()=default;
     RigidBody(int n, float radius,float mass);
+    ~RigidBody()=default;
 
     Vec2 force;
     Vec2 position{0.0f,0.0f};

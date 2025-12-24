@@ -35,6 +35,7 @@ class World{
     std::vector<RigidBody> m_bodies; // All rigid bodies, static and non-static, in the world ( Of which the world takes ownership)
     int solverIterations{10}; // Numver of times collisions are solved per step 
     Vec2 gravity{0.0f,-9.81f}; 
+    float m_yBounds=100.0f;
 
 };
 
