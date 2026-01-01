@@ -120,6 +120,8 @@ Visuals::~Visuals(){
 
 }
 
+std::vector<float> buffer{};
+
 void Visuals::drawRigidBody(const RigidBody& body){
 
     // Draws a single rigid body using the active shader and geometry buffers.
@@ -138,8 +140,7 @@ void Visuals::drawRigidBody(const RigidBody& body){
     glUniform1f(m_zoomLoc,   m_zoom);
 
     // Flatten world-space vertices into a float buffer
-    std::vector<float> buffer;
-    buffer.reserve(body.transformedVertices.size() * 2);
+    buffer.clear();
     
     for (const Vec2& v : body.transformedVertices) {
         buffer.push_back(v.x);
@@ -228,16 +229,23 @@ void Visuals::renderLoop(){
     // Runs until the window is closed and attempts to cap the frame rate.
     // Must be called from the thread that owns the OpenGL context ( main.cpp with current setup).
 
-    int frameRate=120; // 120 fps desired 
-    float lastTime = glfwGetTime();
+    buffer.reserve(2000); // Assuming polygons won't have more than 1000 vertices
 
+    int frameRate=600; // 120 fps desired 
+    float lastTime = glfwGetTime();
 
     auto* visuals = static_cast<Visuals*>(glfwGetWindowUserPointer(m_window));
     glfwSetWindowUserPointer(m_window, this);
     glfwSetMouseButtonCallback(m_window,mouseButtonCallback);
 
+
+    using clock = std::chrono::steady_clock;
+    auto lastReport = clock::now();
+    uint64_t frames = 0;
+
     while (!glfwWindowShouldClose(m_window)) {
 
+        frames++;
 
         double frameStart = glfwGetTime();
         // Basic input
@@ -276,7 +284,7 @@ void Visuals::renderLoop(){
         lastTime = now;
         world.step(static_cast<float>(dt));
 
-        // Run at the desired frame rate 
+        // Limit FPS to be at most fameRate 
         double frameEnd = glfwGetTime();
         double frameDuration = frameEnd - frameStart;
         double sleepTime = (1/frameRate) - frameDuration;
@@ -284,6 +292,28 @@ void Visuals::renderLoop(){
         if (sleepTime > 0.0) {
             std::this_thread::sleep_for(std::chrono::duration<double>(sleepTime));
         }
+
+        auto nowReport = clock::now();
+        double secs = std::chrono::duration<double>(nowReport - lastReport).count();
+
+        if (secs >= 1.0) {
+
+            WorldStats& s = world.getStats();
+            std::cout
+                << "FPS: " << (frames / secs)
+                << " | [Steps/s]: " << (s.steps / secs)
+                << " | [Body updates/s]: " << (s.bodyUpdates / secs)
+                << " | [Broad checks/s:] " << (s.broadChecks / secs)
+                << " | [Narrow checks/s:] " << (s.narrowChecks / secs)
+                << " | [Contacts/s] " << (s.contactsResolved / secs)
+                << " | [Bodies:] " << world.getBodies().size()
+                << "\n";
+
+            frames = 0;
+            s.resetStats();
+            lastReport = nowReport;
+        }
+
         
     }
 

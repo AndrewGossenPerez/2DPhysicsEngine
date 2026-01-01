@@ -12,14 +12,17 @@
 #include <algorithm>
 #include <iostream>
 
-void broadPhase(std::vector<RigidBody>& bodies){ 
+std::pair<bool,bool> broadPhase(std::vector<RigidBody>& bodies){ 
     
-    // Broad-phase collision detection.
+    // Broad-phase collision detection, returns whether the narrow phase was reached.
     // - Generates close candidate pairs (i,j) using AABBS and spatial partioning, where i and j are close in world-space.
     // - For each candidate pair, it is ensured their AABB overlaps, in which the narrow phase is then called for the candidate pair. 
     // Preconditions:
     // - A.transformedVertices / B.transformedVertices are rebuilt here via physEng::worldSpace().
     // Thread-safety: not thread-safe, run from physics thread only.
+
+    bool narrowReached=false;
+    bool inCollision=false;
 
     std::vector<AABB> aabbs;
     aabbs.reserve(bodies.size()); 
@@ -46,10 +49,12 @@ void broadPhase(std::vector<RigidBody>& bodies){
         // Do a final cheap check to ensure their AABBS are overlapping before running an SAT test 
         if (!AABBintersection(aabbs[i], aabbs[j])) continue;
         // At this point, it is very likely they are in collision, so we can run expensive SAT tests
-        narrowPhase(A, B);
+        narrowReached=true;
+        inCollision=narrowPhase(A, B);
 
     }
 
+    return {narrowReached,inCollision};
 }
 
 void World::step(float dt){ 
@@ -61,22 +66,22 @@ void World::step(float dt){
     // Postconditions:
     // - Body transforms updated and caches invalidated (body.update = true on transform change).
 
-    for (auto& body : m_bodies){
-        if (!body.isStatic){
+    // Integrate
+    for (auto& body : m_bodies) {
+        if (!body.isStatic) {
 
-            // Integrator using dt
             body.linearAcceleration = gravity;
             body.linearVelocity += body.linearAcceleration * dt;
             body.position += body.linearVelocity * dt;
             body.rotation += body.angularVelocity * dt;
-            body.force = Vec2(0, 0); // Going to implement forces later on 
-            body.update = true; // invalidate cached transformedVertices
-
+            body.force = Vec2(0, 0);
+            body.update = true;
+            m_stats.bodyUpdates++;
         }
-
     }
 
-    m_bodies.erase( // Remove bodies that are out of bounds 
+    // Cull out-of-bounds bodies
+    m_bodies.erase(
         std::remove_if(m_bodies.begin(), m_bodies.end(),
             [&](const RigidBody& body) {
                 return body.position.y < -m_yBounds;
@@ -84,11 +89,14 @@ void World::step(float dt){
         m_bodies.end()
     );
 
-    for (int i = 0; i < solverIterations; ++i) { 
-        broadPhase(m_bodies); // Check the broad phase First 
-        // Note, the narrowPahse is automatically called within the broadPhase function.
+    for (int i = 0; i < solverIterations; ++i) {
+        auto [narrowPhaseReached,colliding]=broadPhase(m_bodies);
+        m_stats.broadChecks++;
+        m_stats.narrowChecks+=(int)narrowPhaseReached;
+        m_stats.contactsResolved+=(int)colliding;
     }
 
+    m_stats.steps++;
 
 }
 
@@ -98,78 +106,8 @@ struct impulseManifold{ // Used to store impulses to apply all impulses only onc
     Vec2 rB;
 };
 
+
 void resolveCollision(Manifold& manifold){
-
-    // Resolves collision by applying impulses at each contact point.
-    // Preconditions:
-    // - manifold.inCollision == true
-    // - manifold.normal is unit length and points from A -> B
-    // - contactCount in [1,2] and contact points are valid
-    // Effects:
-    // - Modifies A/B linearVelocity and angularVelocity.
-
-    RigidBody& A=manifold.A;
-    RigidBody& B=manifold.B;
-    const Vec2 normal=manifold.normal;
-
-    std::vector<Vec2> contacts;
-    contacts.reserve(manifold.contactCount);
-    if (manifold.contactCount >= 1) contacts.push_back(manifold.contact1);
-    if (manifold.contactCount >= 2) contacts.push_back(manifold.contact2);
-
-    std::vector<impulseManifold> impulses;
-
-    impulses.reserve(contacts.size());
-
-    for (auto& contact : contacts){ // Create impulse for each contact point 
-
-        Vec2 radiusA=contact-A.position;
-        Vec2 radiusB=contact-B.position;
-
-        // Perpendicular radii
-        Vec2 rA=Vec2(-radiusA.y,radiusA.x);
-        Vec2 rB=Vec2(-radiusB.y,radiusB.x);
-
-        Vec2 AtangentialVelocity=rA*A.angularVelocity;
-        Vec2 BtangentialVelocity=rB*B.angularVelocity;
-
-        Vec2 relativeVel= (
-            (B.linearVelocity+BtangentialVelocity)-
-            (A.linearVelocity+AtangentialVelocity)
-        );
-        
-        float velAlongNormal = vecMath::dot(relativeVel, manifold.normal);
-        if (velAlongNormal > 0.0f) continue;  // If they are already separating along the normal, so the collision is going to resolve on its own
-
-        float rADot=vecMath::dot(rA,normal);
-        float rBDot=vecMath::dot(rB,normal);
-
-        // Same scalar impulse magnitude 
-        float minRestitiution = std::min(A.restitution, B.restitution); // Variable e 
-
-        float j = -(1.0f + minRestitiution) * velAlongNormal;
-        float denominator= (A.inverseMass + B.inverseMass + (rADot*rADot)*A.inverseInertia + (rBDot*rBDot)*B.inverseInertia  );
-        j /= denominator;
-        j /= static_cast<float>(manifold.contactCount);
-        Vec2 impulse=manifold.normal*j;
-
-        // Construct impulse manifold
-        impulseManifold rotManifold{impulse,radiusA,radiusB}; 
-        impulses.push_back(rotManifold);
-
-    }
-
-    // Apply impulses after impulse for all contact points created 
-    for (auto& impulseData : impulses){
-        A.linearVelocity-=impulseData.impulse*A.inverseMass;
-        B.linearVelocity+=impulseData.impulse*B.inverseMass;
-        A.angularVelocity += -vecMath::cross(impulseData.rA, impulseData.impulse) * A.inverseInertia;
-        B.angularVelocity += vecMath::cross(impulseData.rB, impulseData.impulse) * B.inverseInertia;
-    }
-
-};
-
-void resolveCollisionFriction(Manifold& manifold){
 
     // Resolves collision by applying impulses at each contact point.
     // Preconditions:
@@ -283,9 +221,10 @@ void resolveCollisionFriction(Manifold& manifold){
 };
 
 
-void narrowPhase(RigidBody& A, RigidBody& B){ 
+bool narrowPhase(RigidBody& A, RigidBody& B){  
     
-    // Narrow-phase collision detection and resolution for a candidate body pair.
+    // Narrow-phase collision detection and resolution for a candidate body pair, return whether a collision was resolved 
+    // ( i.e. whether there was actually a collision)
     //
     // Preconditions:
     // - A and B have passed broad-phase testing.
@@ -296,9 +235,9 @@ void narrowPhase(RigidBody& A, RigidBody& B){
     // - May modify A/B positions via penetration correction.
 
     Manifold m = SATCollision(A, B); // Apply the SAT test to objectively discern if they are in collision
-    if (!m.inCollision) return; // Two objects are not colliding. we can stop here
+    if (!m.inCollision) return false; // Two objects are not colliding. we can stop here
 
-    resolveCollisionFriction(m); // At this point, the two objects are colliding, so we must resolve the collision
+    resolveCollision(m); // At this point, the two objects are colliding, so we must resolve the collision
 
     // Apply position correction afterwards to seperate the two objects.
 
@@ -313,6 +252,8 @@ void narrowPhase(RigidBody& A, RigidBody& B){
         if (!A.isStatic) { A.position -= correction * A.inverseMass; A.update=true; } // Invalidate cache as position cahnged 
         if (!B.isStatic) { B.position += correction * B.inverseMass; B.update=true; } 
     }
+
+    return true;
 
 }
 

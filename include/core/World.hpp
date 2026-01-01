@@ -21,6 +21,7 @@
 #pragma once
 #include "core/RigidBody.hpp"
 #include <vector>
+#include "stats/world_stats.hpp"
 
 class World{ 
 
@@ -29,6 +30,7 @@ class World{
     Vec2 getGravity() const{ return gravity; } 
     std::vector<RigidBody>& getBodies() { return m_bodies; } // Return rigid bodies in the world 
     void step(float dt); // Step function for the world, called after each frame is rendered 
+    WorldStats& getStats() { return m_stats; } 
 
     private:
 
@@ -36,8 +38,9 @@ class World{
     int solverIterations{10}; // Numver of times collisions are solved per step 
     Vec2 gravity{0.0f,-9.81f}; 
     float m_yBounds=100.0f;
+    WorldStats m_stats;
 
 };
 
 // The narrow phase for collision checking, using an expensive but definitive SAT test.
-void narrowPhase(RigidBody& A,RigidBody& B); 
+bool narrowPhase(RigidBody& A,RigidBody& B); 
