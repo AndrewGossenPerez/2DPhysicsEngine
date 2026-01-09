@@ -15,16 +15,12 @@ Implements convex polygon collision detection via SAT, impulse-based resolution 
 ## Installation
 Clone the repository
 ```bash
-git clone --recurse-submodules https://github.com/AndrewGossenPerez/2DPhysicsEngine.git
-mkdir build
-cd build
-cmake ..
-make
+git clone https://github.com/AndrewGossenPerez/2DPhysicsEngine.git
+cd 2DPhysicsEngine
+cmake -S . -B build
+cmake --build build -j
 ```
-If you've already cloned without submodules
-```bash 
-git submodule update --init --recursive
-```
+
 
 **Demo Videos**
 ---
