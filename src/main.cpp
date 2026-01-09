@@ -55,7 +55,6 @@ int main(){
     // Main loop
     gfx.renderLoop();
     
-
     return 0;
 
 }

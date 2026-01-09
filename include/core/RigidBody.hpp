@@ -20,6 +20,10 @@
 // - RigidBody is NOT thread-safe.
 // - Instances must only be accessed and mutated from a single thread
 //   (the physics simulation thread).
+
+// Notes: 
+//  - Polygons are assumed to have at most 1,000 vertices 
+
 // --
 
 #pragma once
@@ -55,7 +59,7 @@ struct RigidBody{
     float inertia{0.0f};
     float inverseInertia{0.0f};
     float staticFriction{0.2f};
-    float dynamicFriction{0.8f};
+    float dynamicFriction{0.0f};
     float density{0.0f}; 
     float mass{0.0f};
     float inverseMass{0.0f};

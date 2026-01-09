@@ -288,37 +288,16 @@ void Visuals::renderLoop(){
 
         // clamp so debugger pauses / hitches don't explode the sim
         if (frameDt > 0.25) frameDt = 0.25;
-
         acc += frameDt;
 
-        constexpr double fixedDt = 1.0 / 120.0;   // choose 60 or 120
+        constexpr double fixedDt = 1.0 / 120.0; // Choose between 60FPS or 120FPS fixed framerate 
+        // decoupled from the simulation 
+
         while (acc >= fixedDt) {
             world.step((float)fixedDt);
             acc -= fixedDt;
         }
-        
-        auto nowReport = clock::now();
-        double secs = std::chrono::duration<double>(nowReport - lastReport).count();
 
-        if (secs >= 1.0) {
-
-            WorldStats& s = world.getStats();
-            std::cout
-                << "FPS: " << (frames / secs)
-                << " | [Steps/s]: " << (s.steps / secs)
-                << " | [Body updates/s]: " << (s.bodyUpdates / secs)
-                << " | [Broad checks/s:] " << (s.broadChecks / secs)
-                << " | [Narrow checks/s:] " << (s.narrowChecks / secs)
-                << " | [Contacts/s] " << (s.contactsResolved / secs)
-                << " | [Bodies:] " << world.getBodies().size()
-                << "\n";
-
-            frames = 0;
-            s.resetStats();
-            lastReport = nowReport;
-        }
-
-        
     }
 
     glfwPollEvents();
