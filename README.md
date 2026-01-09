@@ -8,7 +8,8 @@ Implements convex polygon collision detection via SAT, impulse-based resolution 
 - [x] Impulse resolution with angular dynamics  
 - [x] Coulomb friction (static/dynamic)  
 - [x] Broadphase AABB culling  
-- [x] Spatial partitioning 
+- [x] Spatial partitioning
+- [ ] Visual Instrumentation 
 
 
 ## Installation
