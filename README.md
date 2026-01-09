@@ -19,6 +19,7 @@ git clone https://github.com/AndrewGossenPerez/2DPhysicsEngine.git
 cd 2DPhysicsEngine
 cmake -S . -B build
 cmake --build build -j
+./build/2DPhysicsEngine
 ```
 
 
