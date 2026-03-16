@@ -210,12 +210,12 @@ void Visuals::mouseButtonCallback(GLFWwindow* window, int button, int action, in
         yNDC / visuals->m_zoom
     };
 
-    RigidBody body(4, 1.0f, 2.0f);
+    RigidBody body(3, 1.0f, 2.0f);
     body.snapTo(worldPos);
     body.update = true;       
     body.rotate(1.5708*1.5f);         
-    body.staticFriction=0.1;
-    body.dynamicFriction=0.05;
+    body.staticFriction=0.15;
+    body.dynamicFriction=0.15;
     body.colour = Colour{0.0f, 255.0f, 255.0f};
     body.restitution = 0.2f;
 

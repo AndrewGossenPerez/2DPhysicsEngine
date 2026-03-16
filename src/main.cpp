@@ -39,10 +39,10 @@ int main(){
     floor2.restitution=1.0f;
     world.getBodies().push_back(floor2);
 
-    for (int i=0;i<50;i++){
+    for (int i=0;i<300;i++){
         int test=10;
         RigidBody t4(4,1.0,2.0);
-        t4.snapTo(Vec2(-20,i/50.0f));   
+        t4.snapTo(Vec2(2.0f+(i/250),0.9f));   
         t4.colour=Colour{255.0f,255.0f,255.0f};
         t4.rotate(1.5708*1.5f);      
         t4.dynamicFriction=0.9;
