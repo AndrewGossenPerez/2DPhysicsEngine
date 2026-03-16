@@ -21,8 +21,8 @@ std::pair<bool,bool> broadPhase(std::vector<RigidBody>& bodies,WorldStats& m_sta
     // - A.transformedVertices / B.transformedVertices are rebuilt here via physEng::worldSpace().
     // Thread-safety: not thread-safe, run from physics thread only.
 
-    bool narrowReached=false;
-    bool inCollision=false;
+    bool narrowReached = false;
+    bool inCollision = false;
 
     std::vector<AABB> aabbs;
     aabbs.reserve(bodies.size()); 
@@ -31,7 +31,7 @@ std::pair<bool,bool> broadPhase(std::vector<RigidBody>& bodies,WorldStats& m_sta
         // update world space vertices for bodies still in bounds 
 
         physEng::worldSpace(body); // Update each body from it's local space vertices to world space 
-        AABB box=getAABB(body); // Construct it's AABB
+        AABB box = getAABB(body); // Construct it's AABB
         aabbs.push_back(box);
 
     }
@@ -79,6 +79,7 @@ void World::step(float dt){
             body.force = Vec2(0, 0);
             body.update = true;
             m_stats.bodyUpdates++;
+
         }
     }
 
@@ -92,9 +93,9 @@ void World::step(float dt){
     );
 
     for (int i = 0; i < solverIterations; ++i) {
-        auto [narrowPhaseReached,colliding]=broadPhase(m_bodies,m_stats);
-        m_stats.narrowChecks+=(int)narrowPhaseReached;
-        m_stats.contactsResolved+=(int)colliding;
+        auto [narrowPhaseReached,colliding] = broadPhase(m_bodies,m_stats);
+        m_stats.narrowChecks += (int)narrowPhaseReached;
+        m_stats.contactsResolved += (int)colliding;
     }
 
     m_stats.steps++;
@@ -117,9 +118,9 @@ void resolveCollision(Manifold& manifold){
     // Effects:
     // - Modifies A/B linearVelocity and angularVelocity.
 
-    RigidBody& A=manifold.A;
-    RigidBody& B=manifold.B;
-    const Vec2 normal=manifold.normal;
+    RigidBody& A = manifold.A;
+    RigidBody& B = manifold.B;
+    const Vec2 normal = manifold.normal;
 
     std::vector<Vec2> contacts;
     contacts.reserve(manifold.contactCount);
@@ -130,41 +131,41 @@ void resolveCollision(Manifold& manifold){
 
     impulses.reserve(contacts.size());
 
-    float staticFriction=std::min(A.staticFriction,B.staticFriction);
-    float dynamicFriction=std::min(A.dynamicFriction,B.dynamicFriction);
+    float staticFriction = std::min(A.staticFriction,B.staticFriction);
+    float dynamicFriction = std::min(A.dynamicFriction,B.dynamicFriction);
 
     for (auto& contact : contacts){ // Create impulse for each contact point 
 
-        Vec2 radiusA=contact-A.position;
-        Vec2 radiusB=contact-B.position;
+        Vec2 radiusA = contact-A.position;
+        Vec2 radiusB = contact-B.position;
 
         // Perpendicular radii
-        Vec2 rA=Vec2(-radiusA.y,radiusA.x);
-        Vec2 rB=Vec2(-radiusB.y,radiusB.x);
+        Vec2 rA = Vec2(-radiusA.y,radiusA.x);
+        Vec2 rB = Vec2(-radiusB.y,radiusB.x);
 
-        Vec2 AtangentialVelocity=rA*A.angularVelocity;
-        Vec2 BtangentialVelocity=rB*B.angularVelocity;
+        Vec2 AtangentialVelocity = rA*A.angularVelocity;
+        Vec2 BtangentialVelocity = rB*B.angularVelocity;
 
         Vec2 relativeVel= (
             (B.linearVelocity+BtangentialVelocity)-
             (A.linearVelocity+AtangentialVelocity)
         );
 
-        Vec2 tangent=relativeVel-normal*vecMath::dot(relativeVel,normal);
+        Vec2 tangent = relativeVel-normal*vecMath::dot(relativeVel,normal);
         
         float velAlongNormal = vecMath::dot(relativeVel, manifold.normal);
         if (velAlongNormal > 0.0f) continue;  // If they are already separating along the normal, so the collision is going to resolve on its own
 
-        bool applyFriction=true;
+        bool applyFriction = true;
         
         if (vecMath::floatCloselyEqual(tangent.length(),0)){ // Allow box to microsettle ( stay flat once all velocity is lost )
-            applyFriction=false;  
+            applyFriction = false;  
         } else { 
-            tangent=tangent.normalise();
+            tangent = tangent.normalise();
         }
 
-        float rADot=vecMath::dot(rA,normal);
-        float rBDot=vecMath::dot(rB,normal);
+        float rADot = vecMath::dot(rA,normal);
+        float rBDot = vecMath::dot(rB,normal);
         float minRestitiution = std::min(A.restitution,B.restitution); // Variable e 
 
         float denominator= (A.inverseMass + B.inverseMass + (rADot*rADot)*A.inverseInertia + (rBDot*rBDot)*B.inverseInertia  ); 
@@ -173,15 +174,15 @@ void resolveCollision(Manifold& manifold){
         j /= static_cast<float>(manifold.contactCount);
 
         // Rotational and linear manifold 
-        Vec2 impulse=manifold.normal*j;
+        Vec2 impulse = manifold.normal*j;
         impulseManifold rotManifold{impulse,radiusA,radiusB}; 
         impulses.push_back(rotManifold);
 
         // Friction manifold 
         if (applyFriction){
 
-            float rADotTangential=vecMath::dot(rA,tangent);
-            float rBDotTangential=vecMath::dot(rB,tangent);
+            float rADotTangential = vecMath::dot(rA,tangent);
+            float rBDotTangential = vecMath::dot(rB,tangent);
 
             float denominatorTangential= (
                 A.inverseMass + B.inverseMass + 
@@ -210,7 +211,6 @@ void resolveCollision(Manifold& manifold){
 
     // Apply impulses after impulse for all contact points created 
     for (auto& impulseData : impulses){
-
         A.linearVelocity-=impulseData.impulse*A.inverseMass;
         B.linearVelocity+=impulseData.impulse*B.inverseMass;
         A.angularVelocity += -vecMath::cross(impulseData.rA, impulseData.impulse) * A.inverseInertia;
