@@ -30,12 +30,10 @@ void setBoxVertices(RigidBody& body, float width, float height){
     float s = std::sin(body.rotation);
 
     for (const Vec2& v : body.vertices){
-        Vec2 rotated(
-            v.x * c - v.y * s,
-            v.x * s + v.y * c
+        body.transformedVertices.emplace_back(
+            body.position.x + (v.x * c - v.y * s),
+            body.position.y + (v.x * s + v.y * c)
         );
-        // Translate into world space
-        body.transformedVertices.push_back(body.position + rotated);
     }
 
 }
@@ -75,7 +73,7 @@ float computeRegularPolygonInertia(int n, float m, float r){
 
     if (n < 3 || m <= 0.0f) return 0.0f; // Either an invalid polygon or a static object 
     n = static_cast<float>(n);
-    float angle = 2.0f * M_PI / n;
+    float angle = 2.0f * M_PI / static_cast<float>(n);
     float I = (m * r * r / 12.0f) * (3.0f + std::cos(angle));
     return I;
 
@@ -101,9 +99,9 @@ RigidBody::RigidBody(int n,float r,float m) : sides(n), radius(r), mass(m) {
     // Sets inverse mass for impulse math. Static bodies and non-positive masses return 0.
     // Avoids division by zero and encodes immovable bodies via invMass = 0.
 
-    vertices=generateRegularPolygon(n,r);
-    inertia=computeRegularPolygonInertia(n,m,r);
-    inverseInertia=1/inertia;
-    inverseMass=computeInverseMass(m,isStatic);
+    vertices = generateRegularPolygon(n,r);
+    inertia = computeRegularPolygonInertia(n,m,r);
+    inverseInertia = 1/inertia;
+    inverseMass = computeInverseMass(m,isStatic);
 
 }

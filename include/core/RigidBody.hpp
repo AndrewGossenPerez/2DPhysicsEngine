@@ -47,6 +47,11 @@ struct RigidBody{
     RigidBody(int n, float radius,float mass);
     ~RigidBody()=default;
 
+    RigidBody(const RigidBody&) = default;
+    RigidBody& operator=(const RigidBody&) = default;
+    RigidBody(RigidBody&&) noexcept = default;
+    RigidBody& operator=(RigidBody&&) noexcept = default;
+
     Vec2 force;
     Vec2 position{0.0f,0.0f};
     float rotation{0.0f}; // Radians
@@ -74,18 +79,18 @@ struct RigidBody{
     // Position and rotation incrementing and setting 
 
     void move(const Vec2& amount){ // Move RigidBooy by amount
-        position+=amount;
-        update=true;
+        position += amount;
+        update = true;
     }
     
     void rotate(const float radians){ // Rotate rigid body by given radians 
-        rotation+=radians;
-        update=true;
+        rotation += radians;
+        update = true;
     }
 
     void snapTo(const Vec2& pos){ // Set RigidBody's position to pos 
-        position=pos;
-        update=true;
+        position = pos;
+        update = true;
     }
 
 };

@@ -32,8 +32,8 @@ struct Transform{
 
     // Applies this transform to a local-space point, returning world-space.
     Vec2 applyTransform(const Vec2& p) const { 
-        float c=std::cos(rotation);
-        float s=std::sin(rotation);
+        float c = std::cos(rotation);
+        float s = std::sin(rotation);
         Vec2 rotated(
             p.x * c - p.y * s,
             p.x * s + p.y * c 

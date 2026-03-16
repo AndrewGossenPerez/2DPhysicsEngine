@@ -7,18 +7,20 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <limits>
 
 // -- Contact Point Detection
 
 struct contactResult{
     Vec2 contact1;
     Vec2 contact2;
-    int  contactCount{0};
+    int contactCount{0};
 };
 
 struct contactCandidate{
-    Vec2  point;
+    Vec2 point;
     float distSq;
+    contactCandidate(const Vec2& p, float d) : point(p), distSq(d) {}
 };
 
 contactResult getContactPoints(const RigidBody& A, const RigidBody& B) {
@@ -40,6 +42,7 @@ contactResult getContactPoints(const RigidBody& A, const RigidBody& B) {
 
     // Helper function that pushes candidates for 'points of P to edges of Q'
     auto gatherCandidates = [&](const RigidBody& P, const RigidBody& Q) {
+
         const auto& vertsP = P.transformedVertices;
         const auto& vertsQ = Q.transformedVertices;
 
@@ -49,7 +52,7 @@ contactResult getContactPoints(const RigidBody& A, const RigidBody& B) {
                 const Vec2& q2 = vertsQ[(i + 1) % vertsQ.size()];
                 Vec2 contact;
                 float d2 = vecMath::pointSegmentDistance(q1, q2, vP, contact);
-                candidates.push_back({ contact, d2 });
+                candidates.emplace_back(contact, d2);
             }
         }
     };
@@ -111,7 +114,7 @@ void projectAxis(const std::vector<Vec2>& vertices,const Vec2& normalAxis,float&
     float projection = vecMath::dot(vertices[0], normalAxis);
     min = max = projection; // Establish a baseline 
     for (size_t i=1;i<vertices.size();++i){ // Starting from one as we already established vertices[0] 
-        Vec2 vertice=vertices[i];
+        const Vec2& vertice = vertices[i];
         float projection=vecMath::dot(vertice,normalAxis);
         if (projection<min){ min=projection; }
         if (projection>max) { max=projection; }
@@ -130,11 +133,11 @@ bool SATLoop(const RigidBody& A,const RigidBody& B,float& penetration,Vec2& norm
 
     for (size_t i=0;i<verticesA.size();i++){   // Loops through a polygon's vertices to evaluate each normal axis
        
-        Vec2 va=verticesA[i]; 
-        Vec2 vb=verticesA[(i+1) % verticesA.size()]; // Wrap around indexing 
-        Vec2 edge=vb-va;
-        Vec2 normalAxis=Vec2(-edge.y,edge.x); // The axis to test for seperation, in Clockwise winding order 
-        normalAxis=normalAxis.normalise();
+        const Vec2& va = verticesA[i]; 
+        const Vec2& vb = verticesA[(i+1) % verticesA.size()]; // Wrap around indexing 
+        Vec2 edge = vb - va;
+        Vec2 normalAxis = Vec2(-edge.y,edge.x); // The axis to test for seperation, in Clockwise winding order 
+        normalAxis = normalAxis.normalise();
 
         float maxA,minA;
         float maxB,minB;
@@ -148,10 +151,10 @@ bool SATLoop(const RigidBody& A,const RigidBody& B,float& penetration,Vec2& norm
         }
 
         // At this point, we know there is overlap ( i.e. for this particlar normal there is no seperation ) 
-        float axisDepth=std::min(maxA-minB,maxB-minA);
-        if (axisDepth<penetration){
-            penetration=axisDepth;
-            normal=normalAxis;
+        float axisDepth = std::min(maxA-minB,maxB-minA);
+        if (axisDepth < penetration){
+            penetration = axisDepth;
+            normal = normalAxis;
         }
 
     }
@@ -175,13 +178,13 @@ Manifold SATCollision(RigidBody& RigidBodyA,RigidBody& RigidBodyB) {
     if (!SATLoop(RigidBodyA,RigidBodyB,penetration,normal)) inCollision=false;
     if (!SATLoop(RigidBodyB,RigidBodyA,penetration,normal)) inCollision=false;
     
-    contactResult contactData;
+    contactResult contactData{};
 
     if (inCollision){
         if (vecMath::dot(normal, RigidBodyB.position - RigidBodyA.position) < 0.0f) {
-            normal = normal*-1;  // Ensure the normal always points from a to b to avoid merging objects 
+            normal = normal * -1;  // Ensure the normal always points from a to b to avoid merging objects 
         }
-       contactData=getContactPoints(RigidBodyA,RigidBodyB); // If the object is in collision start to register the contact points 
+       contactData = getContactPoints(RigidBodyA,RigidBodyB); // If the object is in collision start to register the contact points 
     }
 
     Manifold manifold{ // Build a manifold to describe the outcome of the collision

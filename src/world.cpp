@@ -21,8 +21,7 @@ std::pair<bool,bool> broadPhase(std::vector<RigidBody>& bodies,WorldStats& m_sta
     // - A.transformedVertices / B.transformedVertices are rebuilt here via physEng::worldSpace().
     // Thread-safety: not thread-safe, run from physics thread only.
 
-    bool narrowReached = false;
-    bool inCollision = false;
+    bool inCollision = false; // To do later 
 
     std::vector<AABB> aabbs;
     aabbs.reserve(bodies.size()); 
@@ -31,15 +30,15 @@ std::pair<bool,bool> broadPhase(std::vector<RigidBody>& bodies,WorldStats& m_sta
         // update world space vertices for bodies still in bounds 
 
         physEng::worldSpace(body); // Update each body from it's local space vertices to world space 
-        AABB box = getAABB(body); // Construct it's AABB
-        aabbs.push_back(box);
+        aabbs.emplace_back(getAABB(body));
 
     }
 
     partioning::GridConfig gridConfig;
     auto pairs = partioning::buildPairsFromAABBs(aabbs, gridConfig); // Get canditate pairs which are close to each other in world-space 
+    bool narrowReached = static_cast<bool>(pairs.size()>1);
 
-    for (auto [i,j] : pairs) { // Go through each canditate pair, i.e. i and j are close 
+    for (const auto& [i,j] : pairs) { // Go through each canditate pair, i.e. i and j are close 
        
         m_stats.broadChecks++;
 
@@ -120,7 +119,7 @@ void resolveCollision(Manifold& manifold){
 
     RigidBody& A = manifold.A;
     RigidBody& B = manifold.B;
-    const Vec2 normal = manifold.normal;
+    const Vec2& normal = manifold.normal;
 
     std::vector<Vec2> contacts;
     contacts.reserve(manifold.contactCount);

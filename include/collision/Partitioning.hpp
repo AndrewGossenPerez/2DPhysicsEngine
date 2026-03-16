@@ -87,4 +87,4 @@ inline std::vector<std::pair<int,int>> buildPairsFromAABBs(const std::vector<AAB
     return pairs; // Returns canditate pairs for narrow testing 
 }
 
-} // namespace broadphase
+} // namespace partioning

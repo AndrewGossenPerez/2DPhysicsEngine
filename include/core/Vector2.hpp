@@ -40,13 +40,13 @@ struct Vec2{
 
     // Compound addition 
     Vec2& operator +=(const Vec2& otherVector) { 
-        x+=otherVector.x; y+=otherVector.y;
+        x += otherVector.x; y += otherVector.y;
         return *this;
     };
 
     // Compound subtraction
     Vec2& operator -=(const Vec2& otherVector) { 
-        x-=otherVector.x; y-=otherVector.y;
+        x -= otherVector.x; y -= otherVector.y;
         return *this;
     };
 
@@ -73,7 +73,7 @@ struct Vec2{
 
     // Get unit vector and avoid division by zero
     Vec2 normalise() const{ 
-        float len=length();
+        float len = length();
         if (len > 1e-6f) {
             return Vec2{x / len, y / len};
         }
