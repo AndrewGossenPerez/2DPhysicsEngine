@@ -13,7 +13,7 @@ Implements convex polygon collision detection via SAT, impulse-based resolution 
 
 
 ## Installation
-Clone the repository
+Clone the repository (E to zoom out, Q to zoom in)
 ```bash
 git clone https://github.com/AndrewGossenPerez/2DPhysicsEngine.git
 cd 2DPhysicsEngine
