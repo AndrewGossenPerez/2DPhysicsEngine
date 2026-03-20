@@ -1,5 +1,3 @@
-// main.cpp, created by Andrew Gossen.
-
 #include <iostream>
 #include <vector>
 #include "core/World.hpp"
@@ -7,54 +5,60 @@
 #include "core/Transform.hpp"
 #include "visuals/Visuals.hpp"
 
-int main(){
+int main() {
 
     World world;
     Visuals gfx(world);
 
     RigidBody floor;
-    setBoxVertices(floor, 30.0f, 30.0f);    
-    floor.snapTo(Vec2(0.0f, -27.0f));         
-    floor.rotate(1.5708f);                  
+    setBoxVertices(floor, 30.0f, 30.0f);
+    floor.setStatic(true);
+    floor.snapTo(Vec2(0.0f, -35.0f));
+    floor.rotate(1.5708f);
     floor.colour = Colour{150.0f, 255.0f, 255.0f};
-    floor.isStatic=true;
-    floor.restitution=1.0f;
+    floor.restitution = 1.0f;
     world.getBodies().push_back(floor);
 
     RigidBody incline;
-    setBoxVertices(incline, 10.0f, 0.8f);    
-    incline.snapTo(Vec2(-11.0f, 3));         
-    incline.rotate(1.5708*-0.05f);                  
+    setBoxVertices(incline, 10.0f, 0.8f);
+    floor.setStatic(true);
+    incline.snapTo(Vec2(-11.0f, 3.0f));
+    incline.rotate(1.5708f * -0.05f);
     incline.colour = Colour{150.0f, 255.0f, 255.0f};
-    incline.isStatic=true;
-    incline.restitution=1.0f;
-    world.getBodies().push_back(incline);
+    incline.restitution = 1.0f;
+    //world.getBodies().push_back(incline);
 
-    RigidBody floor2;
-    setBoxVertices(floor2, 15.0f, 0.6f);    
-    floor2.snapTo(Vec2(10.0f, 0.9f));         
-    floor2.rotate(1.5708*0.2f);                  
-    floor2.colour = Colour{150.0f, 255.0f, 255.0f};
-    floor2.isStatic=true;
-    floor2.restitution=1.0f;
-    world.getBodies().push_back(floor2);
+    // Static box pegs in plinko arrangement
+    const int rows = 10;
+    const int pegsPerRow = 8;
+    const float startY = 13.0f;
+    const float rowSpacing = 2.2f;
+    const float colSpacing = 2.4f;
+    const float pegSize = 0.5f;
 
-    for (int i=0;i<300;i++){
-        int test=10;
-        RigidBody t4(4,1.0,2.0);
-        t4.snapTo(Vec2(2.0f+(i/250),0.9f));   
-        t4.colour=Colour{255.0f,255.0f,255.0f};
-        t4.rotate(1.5708*1.5f);      
-        t4.dynamicFriction=0.9;
-        t4.staticFriction=0.8;
-        t4.restitution=0.2f;
-        t4.linearVelocity=Vec2(20.0f,0.0f);
-        world.getBodies().push_back(t4);
+    for (int row = 0; row < rows; ++row) {
+
+        float y = startY - row * rowSpacing;
+        float xOffset = (row % 2 == 0) ? 0.0f : colSpacing * 0.5f;
+
+        for (int col = 0; col < pegsPerRow; ++col) {
+
+            float x = -10.0f + col * colSpacing + xOffset;
+
+            RigidBody peg(25,0.4f,1.0f);
+            peg.setStatic(true);
+            peg.snapTo(Vec2(x, y));
+            peg.colour = Colour{255.0f, 255.0f, 255.0f};
+            peg.restitution = 0.2f;
+            peg.staticFriction = 0.0f;
+            peg.dynamicFriction = 0.0f;
+
+            world.getBodies().push_back(peg);
+
+        }
     }
 
-    // Main loop
     gfx.renderLoop();
-    
     return 0;
-
+    
 }

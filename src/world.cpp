@@ -84,8 +84,8 @@ void resolveCollision(Manifold& manifold) {
     impulseManifold impulses[4];
     int impulseCount = 0;
 
-    float staticFriction = std::min(A.staticFriction, B.staticFriction);
-    float dynamicFriction = std::min(A.dynamicFriction, B.dynamicFriction);
+    float staticFriction = std::max(A.staticFriction, B.staticFriction);
+    float dynamicFriction = std::max(A.dynamicFriction, B.dynamicFriction);
 
     for (int idx = 0; idx < contactCount; ++idx) {
         

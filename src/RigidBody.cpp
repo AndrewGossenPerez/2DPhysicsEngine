@@ -101,7 +101,8 @@ RigidBody::RigidBody(int n,float r,float m) : sides(n), radius(r), mass(m) {
 
     vertices = generateRegularPolygon(n,r);
     inertia = computeRegularPolygonInertia(n,m,r);
-    inverseInertia = 1/inertia;
+    inverseInertia = (inertia > 0.0f) ? 1.0f / inertia : 0.0f;
     inverseMass = computeInverseMass(m,isStatic);
 
 }
+

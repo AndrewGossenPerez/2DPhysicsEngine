@@ -93,6 +93,17 @@ struct RigidBody{
         update = true;
     }
 
+    void setStatic(bool value) { // Change the static state, and recompute intertia accordingly
+        isStatic = value;
+        if (isStatic) {
+            inverseMass = 0.0f;
+            inverseInertia = 0.0f;
+        } else {
+            inverseMass = (mass > 0.0f) ? 1.0f / mass : 0.0f;
+            inverseInertia = (inertia > 0.0f) ? 1.0f / inertia : 0.0f;
+        }
+    }
+
 };
 
 // Defined in RigidBody.cpp

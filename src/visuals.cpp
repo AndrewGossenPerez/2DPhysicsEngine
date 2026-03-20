@@ -210,14 +210,14 @@ void Visuals::mouseButtonCallback(GLFWwindow* window, int button, int action, in
         yNDC / visuals->m_zoom
     };
 
-    RigidBody body(3, 1.0f, 2.0f);
+    RigidBody body(25, 0.6f, 1.0f);
     body.snapTo(worldPos);
     body.update = true;       
     body.rotate(1.5708*1.5f);         
-    body.staticFriction=0.15;
-    body.dynamicFriction=0.15;
+    body.staticFriction=0.0;
+    body.dynamicFriction=0.0;
     body.colour = Colour{0.0f, 255.0f, 255.0f};
-    body.restitution = 0.2f;
+    body.restitution = 0.25f;
 
     visuals->world.getBodies().push_back(body);
 
@@ -253,10 +253,10 @@ void Visuals::renderLoop(){
 
         // Zoom controls: Q to zoom in, E to zoom out
         if (glfwGetKey(m_window, GLFW_KEY_Q) == GLFW_PRESS) {
-            m_zoom *= 1.01f; // Zooms in
+            m_zoom *= 1.005f; // Zooms in
         }
         if (glfwGetKey(m_window, GLFW_KEY_E) == GLFW_PRESS) {
-            m_zoom /= 1.01f; // Zooms out
+            m_zoom /= 1.005f; // Zooms out
         }
 
         // Handle framebuffer size changes (retina / m_window resize)
